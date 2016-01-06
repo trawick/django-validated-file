@@ -17,6 +17,13 @@ class ValidatedFileField(models.FileField):
         data = super(ValidatedFileField, self).clean(*args, **kwargs)
         file = data.file
 
+        if self.max_upload_size and hasattr(file, '_size'):
+            if file._size > self.max_upload_size:
+                raise forms.ValidationError(
+                    _('Files of size greater than %(max_size)s are not allowed. Your file is %(current_size)s') %
+                    {'max_size': filesizeformat(self.max_upload_size), 'current_size': filesizeformat(file._size)}
+                )
+
         if self.content_types:
             uploaded_content_type = getattr(file, 'content_type', '')
 
@@ -33,13 +40,6 @@ class ValidatedFileField(models.FileField):
             if not uploaded_content_type in self.content_types:
                 raise forms.ValidationError(
                     _('Files of type %(type)s are not supported.') % {'type': content_type_magic}
-                )
-
-        if self.max_upload_size and hasattr(file, '_size'):
-            if file._size > self.max_upload_size:
-                raise forms.ValidationError(
-                    _('Files of size greater than %(max_size)s are not allowed. Your file is %(current_size)s') %
-                    {'max_size': filesizeformat(self.max_upload_size), 'current_size': filesizeformat(file._size)}
                 )
 
         return data
